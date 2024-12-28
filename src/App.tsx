@@ -702,9 +702,12 @@ function App() {
   // Handle enemy death
   const handleEnemyDeath = (position: Vector3) => {
     createExplosion(position);
-    // Drop XP at a better height for visibility and collection
-    const dropPosition = position.clone().add(new Vector3(0, 1, 0));
-    addPickup('xp', dropPosition, 10);
+    // Spawn XP pickup at the same height as the enemy death
+    addPickup(
+      'xp', 
+      position.clone(), // Use the exact position of the enemy
+      10
+    );
   };
 
   // Update the pickup collection effect
