@@ -6,11 +6,11 @@ export const PROJECTILE_LIFETIME = 10000 // milliseconds
 
 // Player settings
 export const PLAYER_HEIGHT = 1.8 // meters
-export const MOVEMENT_SPEED = 4 // Walking speed
+export const MOVEMENT_SPEED = 10 // Walking speed
 export const MOVEMENT_ACCELERATION = 15
 export const MOVEMENT_DECELERATION = 10
 export const GRAVITY = 10
-export const JUMP_FORCE = 10 // Increased initial jump force
+export const JUMP_FORCE = 5 // Increased initial jump force
 export const DOUBLE_JUMP_FORCE = 6 // Slightly weaker second jump
 export const GROUND_LEVEL = PLAYER_HEIGHT / 2
 export const AIR_CONTROL = 0.5

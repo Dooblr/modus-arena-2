@@ -16,6 +16,7 @@ interface GameState {
   level: number;
   pickups: Pickup[];
   pickupId: number;
+  isPaused: boolean;
   
   // Actions
   takeDamage: (amount: number) => void;
@@ -23,6 +24,7 @@ interface GameState {
   addXP: (amount: number) => void;
   addPickup: (type: 'health' | 'xp', position: Vector3, value: number) => void;
   removePickup: (id: number) => void;
+  setIsPaused: (paused: boolean) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -32,6 +34,7 @@ export const useGameStore = create<GameState>((set) => ({
   level: 1,
   pickups: [],
   pickupId: 0,
+  isPaused: false,
 
   takeDamage: (amount) => set((state) => ({
     health: Math.max(0, state.health - amount)
@@ -67,5 +70,10 @@ export const useGameStore = create<GameState>((set) => ({
 
   removePickup: (id) => set((state) => ({
     pickups: state.pickups.filter(pickup => pickup.id !== id)
-  }))
+  })),
+
+  setIsPaused: (paused) => {
+    console.log(`Game ${paused ? 'Paused' : 'Resumed'}`);
+    set({ isPaused: paused });
+  }
 })); 

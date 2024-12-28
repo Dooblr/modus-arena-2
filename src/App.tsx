@@ -42,6 +42,7 @@ import PauseScreen from './components/PauseScreen'
 import { useGameStore } from './store/gameStore'
 import Pickup from './components/Pickup'
 import HUD from './components/HUD'
+import StartMenu from './components/StartMenu'
 
 type Projectile = {
   id: number
@@ -300,6 +301,7 @@ function App() {
   const lastJumpTime = useRef(0)
   const hasDoubleJump = useRef(true)
   const [isPaused, setIsPaused] = useState(false)
+  const [gameStarted, setGameStarted] = useState(false)
 
   const clampPosition = (position: Vector3) => {
     const halfRoom = ROOM_SIZE / 2 - 0.5 // 0.5 margin to prevent touching walls
@@ -610,19 +612,28 @@ function App() {
     }
   }
 
-  // Add enemy spawning system
+  // Update enemy spawning effect
   useEffect(() => {
+    const { isPaused } = useGameStore.getState();
+    
+    if (isPaused) {
+      console.log('Enemy spawning suspended - game is paused');
+      return;
+    }
+
     const spawnEnemy = () => {
-      // Random position along room edges
-      const side = Math.floor(Math.random() * 4)
-      const pos = new Vector3()
-      const offset = ROOM_SIZE / 2 - 1
+      // Check pause state before each spawn
+      if (useGameStore.getState().isPaused) return;
+      
+      const side = Math.floor(Math.random() * 4);
+      const pos = new Vector3();
+      const offset = ROOM_SIZE / 2 - 1;
 
       switch(side) {
-        case 0: pos.set(offset, GROUND_LEVEL, Math.random() * ROOM_SIZE - offset); break
-        case 1: pos.set(-offset, GROUND_LEVEL, Math.random() * ROOM_SIZE - offset); break
-        case 2: pos.set(Math.random() * ROOM_SIZE - offset, GROUND_LEVEL, offset); break
-        case 3: pos.set(Math.random() * ROOM_SIZE - offset, GROUND_LEVEL, -offset); break
+        case 0: pos.set(offset, GROUND_LEVEL, Math.random() * ROOM_SIZE - offset); break;
+        case 1: pos.set(-offset, GROUND_LEVEL, Math.random() * ROOM_SIZE - offset); break;
+        case 2: pos.set(Math.random() * ROOM_SIZE - offset, GROUND_LEVEL, offset); break;
+        case 3: pos.set(Math.random() * ROOM_SIZE - offset, GROUND_LEVEL, -offset); break;
       }
 
       setEnemies(prev => [...prev, {
@@ -631,13 +642,13 @@ function App() {
         health: 3,
         createdAt: performance.now(),
         lastHitTime: 0
-      }])
-      setEnemyId(prev => prev + 1)
-    }
+      }]);
+      setEnemyId(prev => prev + 1);
+    };
 
-    const interval = setInterval(spawnEnemy, ENEMY_SPAWN_INTERVAL)
-    return () => clearInterval(interval)
-  }, [enemyId])
+    const interval = setInterval(spawnEnemy, ENEMY_SPAWN_INTERVAL);
+    return () => clearInterval(interval);
+  }, [enemyId, useGameStore]);
 
   const handleProjectileHit = (position: Vector3) => {
     console.log('Projectile hit at position:', position); // Log the hit position
@@ -745,8 +756,42 @@ function App() {
     return () => clearInterval(regenInterval);
   }, [isLocked, isPaused, heal]);
 
+  // Update ESC key handler
+  useEffect(() => {
+    const { setIsPaused } = useGameStore.getState();
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isLocked) return;
+      
+      if (e.code === 'Escape') {
+        setIsPaused(prev => {
+          const newPauseState = !prev;
+          if (newPauseState) {
+            document.exitPointerLock();
+          }
+          return newPauseState;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLocked]);
+
+  // Update the game start handler
+  const handleGameStart = () => {
+    setGameStarted(true);
+    const { setIsPaused } = useGameStore.getState();
+    setIsPaused(false);
+    // Don't immediately lock pointer - let player click to start
+  };
+
   return (
     <div className="game-container">
+      {!gameStarted && (
+        <StartMenu onStartGame={handleGameStart} />
+      )}
+
       <Canvas 
         camera={{ fov: 75 }}
         shadows
@@ -761,8 +806,13 @@ function App() {
         
         <PointerLockControls 
           ref={controlsRef}
-          onLock={() => setIsLocked(true)}
-          onUnlock={() => setIsLocked(false)}
+          onLock={() => {
+            if (!gameStarted) return; // Prevent locking if game hasn't started
+            setIsLocked(true);
+          }}
+          onUnlock={() => {
+            setIsLocked(false);
+          }}
         />
         
         <ambientLight intensity={0.2} />
